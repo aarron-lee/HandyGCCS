@@ -20,6 +20,9 @@ def init_handheld(handheld_controller):
     handycon.GAMEPAD_NAME = 'Generic X-Box pad'
     handycon.KEYBOARD_ADDRESS = 'usb-0000:c2:00.3-3/input3'
     handycon.KEYBOARD_NAME = '  Legion Controller for Windows  Keyboard'
+    handycon.KEYBOARD_2_NAME = '  Legion Controller for Windows  Mouse'
+    handycon.KEYBOARD_2_ADDRESS = 'usb-0000:c2:00.3-3/input3'
+
 
 # Captures keyboard events and translates them to virtual device events.
 async def process_event(seed_event, active_keys):
@@ -32,6 +35,18 @@ async def process_event(seed_event, active_keys):
 
     ## Loop variables
     button_on = seed_event.value
+
+    # scroll down = QAM
+    if button_on == -1 and seed_event.code == 8 and seed_event.type == 2 and button2 not in handycon.event_queue:
+        await handycon.handle_key_down(seed_event, button2)
+    elif button_on == -120 and seed_event.code == 11 and seed_event.type == 2 and button2 in handycon.event_queue:
+        await handycon.handle_key_up(seed_event, button2)
+
+    # scroll up = MODE
+    if button_on == 1 and seed_event.code == 8 and seed_event.type == 2 and button5 not in handycon.event_queue:
+        await handycon.handle_key_down(seed_event, button5)
+    elif button_on == 120 and seed_event.code == 11 and seed_event.type == 2 and button5 in handycon.event_queue:
+        await handycon.handle_key_up(seed_event, button5)
 
     # Legion + a = QAM
     if active_keys == [29, 56, 111] and button_on == 1 and button2 not in handycon.event_queue:
