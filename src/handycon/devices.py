@@ -648,15 +648,27 @@ async def toggle_performance():
         handycon.logger.debug(f'Thermal mode set to {handycon.thermal_mode}.')
 
 
+# define OUTPUT_DEV_NAME             "Sony Interactive Entertainment DualSense Edge Wireless Controller"
+# #define OUTPUT_DEV_VENDOR_ID        0x054c
+# #define OUTPUT_DEV_PRODUCT_ID       0x0df2
+# #define OUTPUT_DEV_VERSION          0x8111
+# #define OUTPUT_DEV_BUS_TYPE         BUS_USB
+
+
+	# { 0x045e, 0x02e3, "Microsoft X-Box One Elite pad", MAP_PADDLES, XTYPE_XBOXONE },
+	# { 0x045e, 0x0b00, "Microsoft X-Box One Elite 2 pad", MAP_PADDLES, XTYPE_XBOXONE },
+
 def make_controller():
     global handycon
-
+    # 0x045e, 
     # Create the virtual controller.
     handycon.ui_device = UInput(
             CONTROLLER_EVENTS,
             name='Handheld Controller',
             bustype=0x3,
             vendor=0x045e,
-            product=0x028e,
+            product=0x0b00, # xbox elite 2
+            # product=0x02e3, # xbox elite controller
+            # product=0x028e,
             version=0x110
             )

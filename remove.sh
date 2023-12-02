@@ -1,6 +1,8 @@
 #!/bin/bash
 rm -rf build dist src/handycon.egg-info
 sudo rm -rf /usr/lib/python3*/site-packages/handycon*
+sudo rm -rf /usr/local/lib/python3.11/site-packages/handycon*
+sudo rm /usr/local/bin/handycon
 sudo rm /usr/bin/handycon
 sudo rm -rf /usr/share/handygccs
 sudo rm -rf /etc/handygccs
