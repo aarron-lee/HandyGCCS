@@ -4,10 +4,29 @@
 
 import sys
 from evdev import InputDevice, InputEvent, UInput, ecodes as e, list_devices, ff
-
 from .. import constants as cons
+from .. import legion_configurator as lc
+from enum import Enum
 
 handycon = None
+gyro_on = False
+
+class Gyro(Enum):
+    LEFT_GYRO = 0x01
+    RIGHT_GYRO = 0x02
+
+class GyroRemapActions(Enum):
+    DISABLED = 0x00
+    LEFT_JOYSTICK = 0x01
+    RIGHT_JOYSTICK = 0x02
+
+def toggle_gyro():
+    command = None
+    if gyro_on:
+        command = lc.create_gyro_remap_command(Gyro['RIGHT_GYRO'].value, GyroRemapActions['LEFT_JOYSTICK'].value)
+    else:
+        command = lc.create_gyro_remap_command(Gyro['RIGHT_GYRO'].value, GyroRemapActions['DISABLED'].value)
+    lc.send_command(command)
 
 def init_handheld(handheld_controller):
     global handycon
@@ -27,6 +46,7 @@ def init_handheld(handheld_controller):
 # Captures keyboard events and translates them to virtual device events.
 async def process_event(seed_event, active_keys):
     global handycon
+    global gyro_on
 
     # Button map shortcuts for easy reference.
     button2 = handycon.button_map["button2"]  # Default QAM
@@ -36,17 +56,36 @@ async def process_event(seed_event, active_keys):
     ## Loop variables
     button_on = seed_event.value
 
-    # scroll down = QAM
-    if button_on == -1 and seed_event.code == 8 and seed_event.type == 2 and button2 not in handycon.event_queue:
-        await handycon.handle_key_down(seed_event, button2)
-    elif button_on == -120 and seed_event.code == 11 and seed_event.type == 2 and button2 in handycon.event_queue:
-        await handycon.handle_key_up(seed_event, button2)
+    # file1 = open("/home/deck/Development/HandyGCCS/logs.txt", "a")
 
-    # scroll up = MODE
-    if button_on == 1 and seed_event.code == 8 and seed_event.type == 2 and button5 not in handycon.event_queue:
-        await handycon.handle_key_down(seed_event, button5)
-    elif button_on == 120 and seed_event.code == 11 and seed_event.type == 2 and button5 in handycon.event_queue:
-        await handycon.handle_key_up(seed_event, button5)
+    # file1.write(f'seed_event = {seed_event} active_keys={active_keys} button_on={button_on}\n')
+
+    # seed_event = event at 1701534165.778452, code 00, type 00, val 00 active_keys=[274] button_on=0
+    # seed_event = event at 1701534170.250365, code 00, type 00, val 00 active_keys=[] button_on=0
+
+    if not gyro_on and active_keys == [274] and seed_event.code == 274 and seed_event.type == 1 and  button_on == 1:
+        # toggle gyro on
+        gyro_on = True
+        # file1.write('gyro on\n')
+        toggle_gyro()
+    elif gyro_on and active_keys == [] and seed_event.code == 274 and seed_event.type == 1 and button_on == 0:
+        # toggle gyro off
+        gyro_on = False
+        # file1.write("gyro_off\n")
+        toggle_gyro()
+    # file1.close()
+
+    # # scroll down = QAM
+    # if button_on == -1 and seed_event.code == 8 and seed_event.type == 2 and button2 not in handycon.event_queue:
+    #     await handycon.handle_key_down(seed_event, button2)
+    # elif button_on == -120 and seed_event.code == 11 and seed_event.type == 2 and button2 in handycon.event_queue:
+    #     await handycon.handle_key_up(seed_event, button2)
+
+    # # scroll up = MODE
+    # if button_on == 1 and seed_event.code == 8 and seed_event.type == 2 and button5 not in handycon.event_queue:
+    #     await handycon.handle_key_down(seed_event, button5)
+    # elif button_on == 120 and seed_event.code == 11 and seed_event.type == 2 and button5 in handycon.event_queue:
+    #     await handycon.handle_key_up(seed_event, button5)
 
     # Legion + a = QAM
     if active_keys == [29, 56, 111] and button_on == 1 and button2 not in handycon.event_queue:
