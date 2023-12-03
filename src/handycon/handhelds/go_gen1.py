@@ -6,7 +6,6 @@ import sys
 import time
 from evdev import InputDevice, InputEvent, UInput, ecodes as e, list_devices, ff
 from .. import constants as cons
-from .. import legion_configurator as lc
 from enum import Enum
 from evdev import ecodes
 
@@ -43,14 +42,6 @@ class GyroRemapActions(Enum):
     LEFT_JOYSTICK = 0x01
     RIGHT_JOYSTICK = 0x02
 
-def toggle_gyro():
-    command = None
-    if gyro_on:
-        command = lc.create_gyro_remap_command(Gyro['RIGHT_GYRO'].value, GyroRemapActions['LEFT_JOYSTICK'].value)
-    else:
-        command = lc.create_gyro_remap_command(Gyro['RIGHT_GYRO'].value, GyroRemapActions['DISABLED'].value)
-    lc.send_command(command)
-
 # Emit a single event. Skips some logic checks for optimization.
 def emit_event(event):
     global handycon
@@ -82,7 +73,7 @@ async def handle_button(hid_data, hid_button, new_button):
             inputs_list.append(create_button_input_event(button, 1))
 
         await emit_events(inputs_list)
-    elif(is_button(hid_data, hid_button)  and new_button in handycon.hid_event_queue):
+    if(is_button(hid_data, hid_button) and new_button in handycon.hid_event_queue):
         # hid_button_released
         handycon.hid_event_queue.remove(new_button)
         inputs_list = []
@@ -126,15 +117,6 @@ async def process_event(seed_event, active_keys, hid_data=None):
     if (not seed_event or not active_keys) and hid_data:
         await handle_button(hid_data, HidButtons.LEGION_L, button5)
         await handle_button(hid_data, HidButtons.LEGION_R, button2)
-
-        if(is_button(hid_data, HidButtons.Y3) and 'GYRO' not in handycon.hid_event_queue):
-            # hid_button_pressed
-            handycon.hid_event_queue.add('GYRO')
-            toggle_gyro()
-        elif(is_button(hid_data, HidButtons.Y3)  and 'GYRO' in handycon.hid_event_queue):
-            # hid_button_released
-            handycon.hid_event_queue.remove('GYRO')
-            toggle_gyro()
 
     # not HID events
     else:
