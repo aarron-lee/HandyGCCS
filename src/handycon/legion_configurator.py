@@ -263,16 +263,15 @@ class GyroRemapActions(Enum):
     LEFT_JOYSTICK = 0x01
     RIGHT_JOYSTICK = 0x02
 
-# Enumerate and set the global configuration
-for dev in enumerate(vendor_id):
-    if product_id_match(dev["product_id"]) and dev["usage_page"] == usage_page:
-        global_config = dev
-        break
-
-if not global_config:
-    print("Legion go configuration device not found.")
-else:
-    print(global_config)
+def get_config():
+    # Enumerate and set the global configuration
+    config = None
+    for dev in enumerate(vendor_id):
+        if product_id_match(dev["product_id"]) and dev["usage_page"] == usage_page:
+            global_config = dev
+            config = dev
+            break
+    return config
 
 
 def send_command(command):

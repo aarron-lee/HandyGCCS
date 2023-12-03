@@ -34,6 +34,7 @@ import handycon.handhelds.oxp_gen5 as oxp_gen5
 import handycon.handhelds.oxp_gen6 as oxp_gen6
 import handycon.handhelds.oxp_gen7 as oxp_gen7
 from .constants import *
+from . import legion_configurator as lc
 
 ## Partial imports
 from evdev import ecodes as e, ff, InputDevice, InputEvent, list_devices, UInput
@@ -42,6 +43,8 @@ from shutil import move
 from time import sleep
 
 handycon = None
+hid_qam = False
+hid_mode = False
 
 def set_handycon(handheld_controller):
     global handycon
@@ -219,6 +222,32 @@ async def do_rumble(button=0, interval=10, length=1000, delay=0):
     await asyncio.sleep(interval / 1000)
     handycon.controller_device.erase_effect(effect_id)
 
+
+def get_lgo_hid_device():
+    global handycon
+
+    handycon.logger.info(f"Attempting to grab hid device.")
+    config = lc.get_config()
+    handycon.legion_go_hid = config["path"]
+    # handycon.legion_go_hid.nonblocking = 1
+
+    if(config):
+        handycon.logger.info(f"hid device found")
+    else:
+        handycon.logger.info(f"uhoh, hid device not found")
+
+async def capture_lgo_hid_device():
+    global handycon
+    delay_value = 0.3
+
+    while handycon.running:
+        if handycon.legion_go_hid:
+            device = lc.Device(path=handycon.legion_go_hid)
+            # device.nonblocking = 1
+            data = device.read(64)
+            if(len(data) != 0):
+                await go_gen1.process_event(None, None, data)
+        await asyncio.sleep(delay_value)
 
 # Captures keyboard events and translates them to virtual device events.
 async def capture_keyboard_events():
@@ -536,6 +565,10 @@ async def emit_events(events: list):
 # Emit a single event. Skips some logic checks for optimization.
 def emit_event(event):
     global handycon
+
+    file1 = open("/home/deck/Development/HandyGCCS/logs.txt", "a")
+    file1.write(f'event = {event}\n')
+    file1.close()
     handycon.logger.debug(f"Emitting event: {event}")
     handycon.ui_device.write_event(event)
     handycon.ui_device.syn()
@@ -667,8 +700,8 @@ def make_controller():
             name='Handheld Controller',
             bustype=0x3,
             vendor=0x045e,
-            # product=0x0b00, # xbox elite 2
+            product=0x0b00, # xbox elite 2
             # product=0x02e3, # xbox elite controller
-            product=0x028e,
+            # product=0x028e,
             version=0x110
             )

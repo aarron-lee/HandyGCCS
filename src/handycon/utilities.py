@@ -303,7 +303,7 @@ def map_config():
     "button1": EVENT_MAP[handycon.config["Button Map"]["button1"]],
     "button2": EVENT_MAP[handycon.config["Button Map"]["button2"]],
     "button3": EVENT_MAP[handycon.config["Button Map"]["button3"]],
-    "button4": EVENT_MAP[handycon.config["Button Map"]["button4"]],
+    "button4": EVENT_MAP[handycon.config["Button Map"]["button5"]],
     "button5": EVENT_MAP[handycon.config["Button Map"]["button5"]],
     "button6": EVENT_MAP[handycon.config["Button Map"]["button6"]],
     "button7": EVENT_MAP[handycon.config["Button Map"]["button7"]],

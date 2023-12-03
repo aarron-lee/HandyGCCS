@@ -78,6 +78,10 @@ class HandheldController:
     performance_mode = "--power-saving"
     thermal_mode = "0"
 
+    # Legion Go HID device
+    legion_go_hid = None
+    hid_event_queue = []
+
     def __init__(self):
         self.running = True
         devices.set_handycon(self)
@@ -93,6 +97,7 @@ class HandheldController:
         utilities.id_system()
         utilities.get_config()
         devices.make_controller()
+        devices.get_lgo_hid_device()
 
         # Run asyncio loop to capture all events.
         self.loop = asyncio.get_event_loop()
@@ -103,8 +108,8 @@ class HandheldController:
         asyncio.ensure_future(devices.capture_keyboard_events())
         if self.KEYBOARD_2_NAME != '' and self.KEYBOARD_2_ADDRESS != '':
             asyncio.ensure_future(devices.capture_keyboard_2_events())
-
         asyncio.ensure_future(devices.capture_power_events())
+        asyncio.ensure_future(devices.capture_lgo_hid_device())
         self.logger.info("Handheld Game Console Controller Service started.")
 
         # Establish signaling to handle gracefull shutdown.
