@@ -96,20 +96,20 @@ class HandheldController:
         self.HAS_CHIMERA_LAUNCHER=os.path.isfile(CHIMERA_LAUNCHER_PATH)
         utilities.id_system()
         utilities.get_config()
-        devices.make_controller()
+        # devices.make_controller()
         # devices.get_lgo_hid_device()
 
         # Run asyncio loop to capture all events.
         self.loop = asyncio.get_event_loop()
 
         # Attach the event loop of each device to the asyncio loop.
-        asyncio.ensure_future(devices.capture_controller_events())
-        asyncio.ensure_future(devices.capture_ff_events())
-        asyncio.ensure_future(devices.capture_keyboard_events())
-        if self.KEYBOARD_2_NAME != '' and self.KEYBOARD_2_ADDRESS != '':
-            asyncio.ensure_future(devices.capture_keyboard_2_events())
+        # asyncio.ensure_future(devices.capture_controller_events())
+        # asyncio.ensure_future(devices.capture_ff_events())
+        # asyncio.ensure_future(devices.capture_keyboard_events())
+        # if self.KEYBOARD_2_NAME != '' and self.KEYBOARD_2_ADDRESS != '':
+        #     asyncio.ensure_future(devices.capture_keyboard_2_events())
         asyncio.ensure_future(devices.capture_power_events())
-        asyncio.ensure_future(devices.capture_lgo_hid_device())
+        # asyncio.ensure_future(devices.capture_lgo_hid_device())
         self.logger.info("Handheld Game Console Controller Service started.")
 
         # Establish signaling to handle gracefull shutdown.

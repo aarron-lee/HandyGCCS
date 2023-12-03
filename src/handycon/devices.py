@@ -698,8 +698,8 @@ def make_controller():
             name='Handheld Controller',
             bustype=0x3,
             vendor=0x045e,
-            product=0x0b00, # xbox elite 2
+            # product=0x0b00, # xbox elite 2
             # product=0x02e3, # xbox elite controller
-            # product=0x028e,
+            product=0x028e,
             version=0x110
             )
