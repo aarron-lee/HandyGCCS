@@ -45,10 +45,10 @@ class GyroRemapActions(Enum):
 # Emit a single event. Skips some logic checks for optimization.
 def emit_event(event):
     global handycon
-    handycon.logger.debug(f"Emitting event: {event}")
-    file1 = open("/home/deck/Development/HandyGCCS/logs.txt", "a")
-    file1.write(f"{event}\n")
-    file1.close()
+    # handycon.logger.debug(f"Emitting event: {event}")
+    # file1 = open("/home/deck/Development/HandyGCCS/logs.txt", "a")
+    # file1.write(f"{event}\n")
+    # file1.close()
     handycon.ui_device.write_event(event)
     handycon.ui_device.syn()
 

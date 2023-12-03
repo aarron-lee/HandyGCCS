@@ -223,30 +223,32 @@ async def do_rumble(button=0, interval=10, length=1000, delay=0):
     handycon.controller_device.erase_effect(effect_id)
 
 
-def get_lgo_hid_device():
-    global handycon
+# def get_lgo_hid_device():
+#     global handycon
 
-    handycon.logger.info(f"Attempting to grab hid device.")
-    config = lc.get_config()
-    handycon.legion_go_hid = config["path"]
-    # handycon.legion_go_hid.nonblocking = 1
+#     handycon.logger.info(f"Attempting to grab hid device.")
+#     config = lc.get_config()
+#     handycon.legion_go_hid = config["path"]
+#     # handycon.legion_go_hid.nonblocking = 1
 
-    if(config):
-        handycon.logger.info(f"hid device found")
-    else:
-        handycon.logger.info(f"uhoh, hid device not found")
+#     if(config):
+#         handycon.logger.info(f"hid device found")
+#     else:
+#         handycon.logger.info(f"uhoh, hid device not found")
 
 async def capture_lgo_hid_device():
     global handycon
     delay_value = 0.15
 
     while handycon.running:
-        if handycon.legion_go_hid:
-            device = lc.Device(path=handycon.legion_go_hid)
-            # device.nonblocking = 1
-            data = device.read(64)
-            if(len(data) != 0):
-                await go_gen1.process_event(None, None, data)
+        # must fetch config on every iteration because
+        # it can change if controllers are detached
+        config = lc.get_config()
+        device = lc.Device(path=config["path"])
+        data = device.read(64)
+        if(len(data) != 0):
+            await go_gen1.process_event(None, None, data)
+
         await asyncio.sleep(delay_value)
 
 # Captures keyboard events and translates them to virtual device events.

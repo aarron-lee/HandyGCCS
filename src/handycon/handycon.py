@@ -97,7 +97,7 @@ class HandheldController:
         utilities.id_system()
         utilities.get_config()
         devices.make_controller()
-        devices.get_lgo_hid_device()
+        # devices.get_lgo_hid_device()
 
         # Run asyncio loop to capture all events.
         self.loop = asyncio.get_event_loop()
