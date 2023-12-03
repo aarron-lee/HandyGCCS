@@ -238,7 +238,7 @@ def get_lgo_hid_device():
 
 async def capture_lgo_hid_device():
     global handycon
-    delay_value = 0.3
+    delay_value = 0.15
 
     while handycon.running:
         if handycon.legion_go_hid:
@@ -565,10 +565,6 @@ async def emit_events(events: list):
 # Emit a single event. Skips some logic checks for optimization.
 def emit_event(event):
     global handycon
-
-    file1 = open("/home/deck/Development/HandyGCCS/logs.txt", "a")
-    file1.write(f'event = {event}\n')
-    file1.close()
     handycon.logger.debug(f"Emitting event: {event}")
     handycon.ui_device.write_event(event)
     handycon.ui_device.syn()

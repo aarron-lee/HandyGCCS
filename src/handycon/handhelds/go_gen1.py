@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This file is part of Handheld Game Console Controller System (HandyGCCS)
 # Copyright 2022-2023 Derek J. Clark <derekjohn.clark@gmail.com>
-
+import asyncio
 import sys
 import time
 from evdev import InputDevice, InputEvent, UInput, ecodes as e, list_devices, ff
@@ -13,6 +13,26 @@ from evdev import ecodes
 handycon = None
 gyro_on = False
 hid_qam = False
+
+# STEAM res[18] == 128
+# QAM res[18] == 64
+# Y1 res[20] = 128
+# Y2 res[20] = 64
+# Y3 res[20] = 32
+# M2 res[20] = 8
+# M3 res[20] = 4
+class HidButtons(Enum):
+    LEGION_L = [18, 128]
+    LEGION_R = [18, 64]
+    Y1 = [20, 128]
+    Y2 = [20, 64]
+    Y3 = [20, 32]
+    M2 = [20, 8]
+    M3 = [20, 4]
+
+def is_button(hid_event, button):
+    [idx, value] = button.value
+    return hid_event[idx] == value
 
 class Gyro(Enum):
     LEFT_GYRO = 0x01
@@ -31,6 +51,25 @@ def toggle_gyro():
         command = lc.create_gyro_remap_command(Gyro['RIGHT_GYRO'].value, GyroRemapActions['DISABLED'].value)
     lc.send_command(command)
 
+# Emit a single event. Skips some logic checks for optimization.
+def emit_event(event):
+    global handycon
+    handycon.logger.debug(f"Emitting event: {event}")
+    file1 = open("/home/deck/Development/HandyGCCS/logs.txt", "a")
+    file1.write(f"{event}\n")
+    file1.close()
+    handycon.ui_device.write_event(event)
+    handycon.ui_device.syn()
+
+async def emit_events(events: list):
+    global handycon
+
+    for event in events:
+        emit_event(event)
+        # Pause between multiple events, but not after the last one in the list.
+        if event != events[len(events)-1]:
+            await asyncio.sleep(handycon.BUTTON_DELAY)
+
 def init_handheld(handheld_controller):
     global handycon
     handycon = handheld_controller
@@ -45,6 +84,12 @@ def init_handheld(handheld_controller):
     handycon.KEYBOARD_2_NAME = '  Legion Controller for Windows  Mouse'
     handycon.KEYBOARD_2_ADDRESS = 'usb-0000:c2:00.3-3/input3'
 
+def create_button_input_event(button_codes, value):
+    t = time.time()
+    sec = int(t)
+    usec = t % 1
+    [type, code] = button_codes 
+    return InputEvent(sec, usec, type, code,  value)
 
 # Captures keyboard events and translates them to virtual device events.
 async def process_event(seed_event, active_keys, hid_data=None):
@@ -57,55 +102,42 @@ async def process_event(seed_event, active_keys, hid_data=None):
     button4 = handycon.button_map["button4"]  # Default OSK
     button5 = handycon.button_map["button5"]  # Default MODE
 
-
-    # STEAM res[18] == 128
-    # QAM res[18] == 64
-    # Y1 res[20] = 128
-    # Y2 res[20] = 64
-    # Y3 res[20] = 32
-    # M2 res[20] = 8
-    # M3 res[20] = 4
     if (not seed_event or not active_keys) and hid_data:
-        # HID event
-
-        t = time.time()
-        sec = int(t)
-        usec = t % 1
-        fake_seed_event = None
-        file1 = open("/home/deck/Development/HandyGCCS/logs.txt", "a")
-
-        file1.write(f'loop {handycon.hid_event_queue} hid_data {hid_data[18]} {hid_data[19]} {hid_data[20]}\n')
-
-        if(hid_data[18] == 128 and button5 not in handycon.hid_event_queue):
+        if(is_button(hid_data, HidButtons.LEGION_L) and button5 not in handycon.hid_event_queue):
             # STEAM/Legion_L pressed
-            #  InputEvent: 'sec', 'usec', 'type', 'code', value 
-            fake_seed_event = InputEvent(sec, usec, 1, 316,  1)
             handycon.hid_event_queue.append(button5)
-            file1.write(f'fake_seed_event down = {fake_seed_event}\n')
-            handycon.ui_device.write_event(fake_seed_event)
-            handycon.ui_device.syn()
+            inputs_list = []
 
-            # await handycon.handle_key_down(fake_seed_event, button5)
-        if(hid_data[18] != 128 and button5 in handycon.hid_event_queue):
+            for button in button5:
+                inputs_list.append(create_button_input_event(button, 1))
+
+            await emit_events(inputs_list)
+        if(is_button(hid_data, HidButtons.LEGION_L)  and button5 in handycon.hid_event_queue):
             # turn off STEAM/Legion_L btn
             handycon.hid_event_queue.remove(button5)
-            fake_seed_event = InputEvent(sec, usec, 1, 316,  0)
-            file1.write(f'fake_seed_event up = {fake_seed_event}\n')
-            handycon.ui_device.write_event(fake_seed_event)
-            handycon.ui_device.syn()
-            # await handycon.handle_key_up(fake_seed_event, button5)
-        file1.close()
+            inputs_list = []
+            for button in button5:
+                inputs_list.append(create_button_input_event(button, 0))
+            await emit_events(inputs_list)
+        if(is_button(hid_data, HidButtons.LEGION_R) and button2 not in handycon.hid_event_queue):
+            # STEAM/Legion_L pressed
+            handycon.hid_event_queue.append(button2)
+            inputs_list = []
 
+            for button in button2:
+                inputs_list.append(create_button_input_event(button, 1))
+
+            await emit_events(inputs_list)
+        if(is_button(hid_data, HidButtons.LEGION_R)  and button2 in handycon.hid_event_queue):
+            # turn off STEAM/Legion_L btn
+            handycon.hid_event_queue.remove(button2)
+            inputs_list = []
+            for button in button2:
+                inputs_list.append(create_button_input_event(button, 0))
+            await emit_events(inputs_list)
     else:
         ## Loop variables
         button_on = seed_event.value
-
-        # file1 = open("/home/deck/Development/HandyGCCS/logs.txt", "a")
-
-        # file1.write(f'seed_event = {seed_event} active_keys={active_keys} button_on={button_on}\n')
-
-        # seed_event = event at 1701534165.778452, code 00, type 00, val 00 active_keys=[274] button_on=0
-        # seed_event = event at 1701534170.250365, code 00, type 00, val 00 active_keys=[] button_on=0
 
         if not gyro_on and active_keys == [274] and seed_event.code == 274 and seed_event.type == 1 and  button_on == 1:
             # toggle gyro on
