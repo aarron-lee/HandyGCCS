@@ -70,6 +70,26 @@ async def emit_events(events: list):
         if event != events[len(events)-1]:
             await asyncio.sleep(handycon.BUTTON_DELAY)
 
+async def handle_button(hid_data, hid_button, new_button):
+    global handycon
+
+    if(is_button(hid_data, hid_button) and new_button not in handycon.hid_event_queue):
+        # hid_button_pressed
+        handycon.hid_event_queue.append(new_button)
+        inputs_list = []
+
+        for button in new_button:
+            inputs_list.append(create_button_input_event(button, 1))
+
+        await emit_events(inputs_list)
+    elif(is_button(hid_data, hid_button)  and new_button in handycon.hid_event_queue):
+        # hid_button_released
+        handycon.hid_event_queue.remove(new_button)
+        inputs_list = []
+        for button in new_button:
+            inputs_list.append(create_button_input_event(button, 0))
+        await emit_events(inputs_list)
+
 def init_handheld(handheld_controller):
     global handycon
     handycon = handheld_controller
@@ -102,66 +122,24 @@ async def process_event(seed_event, active_keys, hid_data=None):
     button4 = handycon.button_map["button4"]  # Default OSK
     button5 = handycon.button_map["button5"]  # Default MODE
 
+    # HID events
     if (not seed_event or not active_keys) and hid_data:
-        if(is_button(hid_data, HidButtons.LEGION_L) and button5 not in handycon.hid_event_queue):
-            # STEAM/Legion_L pressed
-            handycon.hid_event_queue.append(button5)
-            inputs_list = []
+        await handle_button(hid_data, HidButtons.LEGION_L, button5)
+        await handle_button(hid_data, HidButtons.LEGION_R, button2)
 
-            for button in button5:
-                inputs_list.append(create_button_input_event(button, 1))
+        if(is_button(hid_data, HidButtons.Y3) and 'GYRO' not in handycon.hid_event_queue):
+            # hid_button_pressed
+            handycon.hid_event_queue.add('GYRO')
+            toggle_gyro()
+        elif(is_button(hid_data, HidButtons.Y3)  and 'GYRO' in handycon.hid_event_queue):
+            # hid_button_released
+            handycon.hid_event_queue.remove('GYRO')
+            toggle_gyro()
 
-            await emit_events(inputs_list)
-        if(is_button(hid_data, HidButtons.LEGION_L)  and button5 in handycon.hid_event_queue):
-            # turn off STEAM/Legion_L btn
-            handycon.hid_event_queue.remove(button5)
-            inputs_list = []
-            for button in button5:
-                inputs_list.append(create_button_input_event(button, 0))
-            await emit_events(inputs_list)
-        if(is_button(hid_data, HidButtons.LEGION_R) and button2 not in handycon.hid_event_queue):
-            # STEAM/Legion_L pressed
-            handycon.hid_event_queue.append(button2)
-            inputs_list = []
-
-            for button in button2:
-                inputs_list.append(create_button_input_event(button, 1))
-
-            await emit_events(inputs_list)
-        if(is_button(hid_data, HidButtons.LEGION_R)  and button2 in handycon.hid_event_queue):
-            # turn off STEAM/Legion_L btn
-            handycon.hid_event_queue.remove(button2)
-            inputs_list = []
-            for button in button2:
-                inputs_list.append(create_button_input_event(button, 0))
-            await emit_events(inputs_list)
+    # not HID events
     else:
         ## Loop variables
         button_on = seed_event.value
-
-        if not gyro_on and active_keys == [274] and seed_event.code == 274 and seed_event.type == 1 and  button_on == 1:
-            # toggle gyro on
-            gyro_on = True
-            # file1.write('gyro on\n')
-            toggle_gyro()
-        elif gyro_on and active_keys == [] and seed_event.code == 274 and seed_event.type == 1 and button_on == 0:
-            # toggle gyro off
-            gyro_on = False
-            # file1.write("gyro_off\n")
-            toggle_gyro()
-        # file1.close()
-
-        # # scroll down = QAM
-        # if button_on == -1 and seed_event.code == 8 and seed_event.type == 2 and button2 not in handycon.event_queue:
-        #     await handycon.handle_key_down(seed_event, button2)
-        # elif button_on == -120 and seed_event.code == 11 and seed_event.type == 2 and button2 in handycon.event_queue:
-        #     await handycon.handle_key_up(seed_event, button2)
-
-        # # scroll up = MODE
-        # if button_on == 1 and seed_event.code == 8 and seed_event.type == 2 and button5 not in handycon.event_queue:
-        #     await handycon.handle_key_down(seed_event, button5)
-        # elif button_on == 120 and seed_event.code == 11 and seed_event.type == 2 and button5 in handycon.event_queue:
-        #     await handycon.handle_key_up(seed_event, button5)
 
         # Legion + a = QAM
         if active_keys == [29, 56, 111] and button_on == 1 and button2 not in handycon.event_queue:
